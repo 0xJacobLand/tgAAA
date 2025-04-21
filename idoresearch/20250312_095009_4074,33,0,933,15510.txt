@@ -1,0 +1,22 @@
+**Break Monad**
+
+Monad [призвали](https://x.com/monad_xyz/status/1899463064749031460) комьюнити сломать сеть в играх, где каждый шаг это транзакция.
+
+Активность однозначно стоит внимания и нужно искать пути, как выделиться от всей массы и софтовиков.
+
+***️⃣****Игры** (часть уже сломаны): 
+`•` [Arcane Horizons](https://minigame.arcanemmo.xyz/) (нужно забираться, как можно выше на дерево, избегая колючки);
+`•` [Flappy Trump](https://flappy-trump-beta.vercel.app/) (нужно убивать монстров, но и так чтобы не касаться верх и низ);
+`•` [FrontRunner](https://www.shmonad.xyz/frontrunner) (можно подписать фронтран-транзакцию);
+`•` [Gas Wars](https://gas-wars.token-factory.xyz/p) (не получается подключить кошелек из-за лимита);
+`•` [Hıyar Apocalypse](https://hiyarapocalypse.vercel.app/) (лежит);
+`•` [Monad Tiles](https://monadtiles.xyz/) (нужно ловить фигуры в нижней зоне);
+`•` [Monagayanimals](https://monagaynanimals.xyz/) (нужно убивать монстров и уклонятся от пуль, но не понятно, как будут трекать активность, т.к. нужно подключать почту, а не кошелек);
+`•` [Monusic](https://monusic.wenads.app/) (нужно играть мелодию, нажимая нужные клавиши);
+`•` [Mouch Knight](https://mouch-knight.emberstake.xyz/) (нужно забираться вверх, избегая палки, но сейчас тяжело заходит в игру);
+`•` [Pump4Gains](https://monad.curvance.com/monad) (качаемся, просто тапая Pump);
+`•` [Velocity Rush](https://velocityrush.me/) (нужно прыгать через предметы).
+
+Также недавно Monad разослали тестовые токены активным кошелькам в среднем по 10-40 токенов, но критерии не раскрыли.
+
+[**IDO research**](https://t.me/idoresearch) | [**Chat**](https://t.me/IDOresearch_chat) | [**NFD**](https://twitter.com/NFD_tools) | [**Combine - софт для мультиаккеров**](https://nfd.gg/)
