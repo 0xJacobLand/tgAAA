@@ -369,6 +369,19 @@ December 2024, 26569, 12000
 January 2025, 26790, 12300
 February 2025, 27190, 12000
 March 2025, 27317, 12000`;
+      } else if (kolId.value.toLowerCase() === 'crypto_hacking') {
+        // Данные для CRYPTO_HACKING с охватами
+        historyData = `May 2024, 0, 0
+June 2024, 38000, 6000
+July 2024, 91000, 8500
+August 2024, 151000, 10500
+September 2024, 434000, 50000
+October 2024, 275000, 19000
+November 2024, 235000, 13000
+December 2024, 180000, 11500
+January 2025, 159000, 11500
+February 2025, 142000, 10500
+March 2025, 127500, 11500`;
       }
       
       // Если есть данные для текущего KOL, парсим их
