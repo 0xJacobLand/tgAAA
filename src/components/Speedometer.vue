@@ -100,6 +100,20 @@ const tooltipData = {
 31 out of 48 months show subscriber decline
 Weak sub‑view correlation (≈ 0.31)
 Engagement drops below 15% by the end`
+  },
+  crypto_hacklng: {
+    title: 'Organic Growth',
+    level: 'Very low — extreme spikes followed by sharp engagement drops point to large-scale bot inflations with minimal real activity',
+    flags: `Subscriber count rockets from 0k to 434 k in four months while engagement falls to 6-9 %
+Steep negative months after the peak (-159 k from Oct to Dec) — classic “bot purge” pattern
+Engagement stays below 15 % despite the channel being young`
+  },
+  crypto_hacking: {
+    title: 'Organic Growth',
+    level: 'Very low — extreme spikes followed by sharp engagement drops point to large-scale bot inflations with minimal real activity',
+    flags: `Subscriber count rockets from 0k to 434 k in four months while engagement falls to 6-9 %
+Steep negative months after the peak (-159 k from Oct to Dec) — classic “bot purge” pattern
+Engagement stays below 15 % despite the channel being young`
   }
 }
 

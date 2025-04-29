@@ -1,5 +1,10 @@
 {
   "rewrites": [
+    { "source": "/api/kol/:id", "destination": "/api/kol/[id]" },
+    { "source": "/api/channel-info", "destination": "/api/channel-info" },
+    { "source": "/api/kolastpost", "destination": "/api/kolastpost" },
+    { "source": "/api/kol30", "destination": "/api/kol30" },
+    { "source": "/api/projects", "destination": "/api/projects" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

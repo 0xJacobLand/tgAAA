@@ -106,8 +106,18 @@ export default {
     
     // Новый метод для получения URL проекта
     getProjectUrl(projectName) {
-      // Здесь можно задать любой формат URL, например:
-      return `/KOLs/${projectName}`;
+      // Исправляем регистр для точного соответствия пути роутера
+      console.log('Original projectName:', projectName);
+      
+      // Особые случаи для CRYPTO_HACKlNG
+      if (projectName.toUpperCase() === 'CRYPTO_HACKING' || 
+          projectName.toLowerCase() === 'crypto_hacking') {
+        console.log('Converting to: CRYPTO_HACKlNG');
+        return `/kols/CRYPTO_HACKlNG`;
+      }
+      
+      // Стандартный случай - просто приводим к нижнему регистру
+      return `/kols/${projectName}`;
     }
   }
 }

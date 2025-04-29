@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from db_utils import get_db_connection
-from typing import List
+from typing import List, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
+import os
+import re
 
 app = FastAPI()
 
@@ -136,6 +138,162 @@ async def get_project_stats():
                 name=row[0],
                 mentions_count=row[1]
             ) for row in stats]
+
+@app.get("/api/kol30")
+async def get_kol30():
+    try:
+        directory_path = os.path.join(os.path.dirname(__file__), '..', 'valid_idoresearch')
+        if not os.path.exists(directory_path):
+            return []
+            
+        files = os.listdir(directory_path)
+        project_counts = {}
+        
+        for file in files:
+            # Извлекаем имя проекта, учитывая черточки
+            date_match = re.search(r'_(20\d{6}|202\d)_', file)
+            
+            if date_match:
+                # Получаем индекс начала даты
+                date_index = file.index(date_match.group(0))
+                # Находим начало имени проекта (после первого подчеркивания)
+                start_index = file.index('_') + 1
+                # Извлекаем имя проекта (от первого _ до даты)
+                project_name = file[start_index:date_index]
+                
+                project_counts[project_name] = project_counts.get(project_name, 0) + 1
+            else:
+                # Если не нашли дату, используем оригинальный подход
+                match = re.search(r'_([^_]+)_', file)
+                if match and match.group(1):
+                    project_name = match.group(1)
+                    project_counts[project_name] = project_counts.get(project_name, 0) + 1
+        
+        # Преобразуем в массив объектов с именем и количеством через запятую
+        projects = [{"name": f"{project_name}, {count}"} 
+                   for project_name, count in project_counts.items()]
+        
+        return projects
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/channel-info")
+async def get_channel_info():
+    try:
+        directory_path = os.path.join(os.path.dirname(__file__), '..', 'kolsdata')
+        if not os.path.exists(directory_path):
+            return []
+            
+        files = os.listdir(directory_path)
+        channel_infos = []
+        
+        for file in files:
+            file_path = os.path.join(directory_path, file)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.split('\n')
+                    values = [line.split(': ')[1].strip() 
+                            for line in lines 
+                            if ': ' in line and line.split(': ')[1].strip()]
+                    info_string = ', '.join(values)
+                    channel_infos.append(info_string)
+            except Exception as file_error:
+                print(f"Error reading file {file_path}: {str(file_error)}")
+                continue
+        
+        return channel_infos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/kolastpost")
+async def get_kol_last_post():
+    try:
+        directory_path = os.path.join(os.path.dirname(__file__), '..', 'valid_idoresearch')
+        if not os.path.exists(directory_path):
+            return []
+            
+        files = [f for f in os.listdir(directory_path) if f.endswith('.txt')]
+        if not files:
+            return []
+            
+        kol_posts: Dict[str, Dict[str, Any]] = {}
+        
+        for file in files:
+            # Ищем дату в формате YYYYMMDD в имени файла
+            date_match = re.search(r'_(\d{8})_', file)
+            if not date_match:
+                continue
+                
+            date_str = date_match.group(1)
+            date_position = file.index(f"_{date_str}_")
+            
+            # Находим первое подчеркивание
+            first_underscore_pos = file.find('_')
+            if first_underscore_pos < 0 or first_underscore_pos >= date_position:
+                continue
+                
+            # Извлекаем имя KOL
+            kol_name = file[first_underscore_pos + 1:date_position]
+            
+            # Извлекаем статистику
+            stats_match = re.search(r'(\d+),(\d+),(\d+),(\d+)\.txt$', file)
+            if not stats_match:
+                stats_match = re.search(r'(\d+),(\d+),(\d+),(\d+)[,\d]*\.txt$', file)
+            
+            stats = ''
+            if stats_match:
+                stats = f"{stats_match.group(1)},{stats_match.group(2)},{stats_match.group(3)},{stats_match.group(4)}"
+            
+            # Читаем содержимое файла
+            try:
+                file_path = os.path.join(directory_path, file)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    
+                    # Обновляем информацию только если это первый или более новый пост
+                    if kol_name not in kol_posts or date_str > kol_posts[kol_name]['date']:
+                        kol_posts[kol_name] = {
+                            'kolName': kol_name,
+                            'date': f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}",
+                            'fileName': file,
+                            'stats': stats,
+                            'content': content
+                        }
+            except Exception as file_error:
+                print(f"Error reading file {file}: {str(file_error)}")
+                continue
+        
+        # Преобразуем в список и сортируем по имени KOL
+        result = sorted(kol_posts.values(), key=lambda x: x['kolName'])
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/projects")
+async def get_projects():
+    try:
+        directory_path = os.path.join(os.path.dirname(__file__), '..', 'valid_idoresearch')
+        if not os.path.exists(directory_path):
+            return []
+            
+        files = [f for f in os.listdir(directory_path) if f.endswith('.txt')]
+        project_counts = {}
+        
+        for file in files:
+            # Извлекаем имя проекта из начала имени файла
+            project_name = file.split('_')[0]
+            if project_name:
+                project_counts[project_name] = project_counts.get(project_name, 0) + 1
+        
+        # Преобразуем в массив объектов
+        projects = [{"name": project_name, "mentions": count} 
+                   for project_name, count in project_counts.items()]
+        
+        return projects
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

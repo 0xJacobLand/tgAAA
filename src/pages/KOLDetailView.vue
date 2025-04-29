@@ -136,13 +136,45 @@ export default {
     const route = useRoute();
     const router = useRouter();
     
-    const kolId = ref(route.params.name || '');
+    // Define normalizeKolId function first to avoid reference error
+    const normalizeKolId = (id) => {
+      console.log(`Normalizing KOL ID: ${id}`);
+      
+      // Приводим к нижнему регистру и убираем пробелы
+      let normalized = id.toLowerCase().replace(/\s+/g, '');
+      
+      // Специальные замены для известных проблемных случаев
+      if (normalized === 'crypto_hacking' || normalized === 'cryptohacking') {
+        normalized = 'crypto_hacklng';
+        console.log(`Special case detected: ${id} -> ${normalized}`);
+      }
+      
+      // Дополнительная проверка для обработки регистра
+      if (id.toUpperCase() === 'CRYPTO_HACKING' || id.toUpperCase() === 'CRYPTO_HACKLNG') {
+        normalized = 'crypto_hacklng';
+        console.log(`Case-sensitive match: ${id} -> ${normalized}`);
+      }
+      
+      console.log(`Final normalized ID: ${normalized}`);
+      return normalized;
+    };
+    
+    // Получаем значение параметра из URL и применяем нормализацию сразу
+    const rawKolId = route.params.name || '';
+    console.log(`Raw KOL ID from route: ${rawKolId}`);
+    
+    // Установка kolId
+    const kolId = ref(rawKolId);
+    
+    // Нормализуем для API вызовов
+    const apiKolId = ref(normalizeKolId(rawKolId));
+    
     const kolData = ref({});
     const loading = ref(true);
     const error = ref('');
     const hasAvatar = ref(false);
     const avatarPath = ref('');
-    const availableAvatars = ['idoresearch', 'defigencapital', 'tradeparty1337', 'XardMoney', 'crypton_off']; 
+    const availableAvatars = ['idoresearch', 'defigencapital', 'tradeparty1337', 'XardMoney', 'crypton_off', 'crypto_hacklng']; 
     const subscribersHistory = ref([]);
     const viewsHistory = ref([]);
     
@@ -158,13 +190,19 @@ export default {
 
     // спидометр
     const meterValue = computed(() => {
+      const kolIdLower = kolId.value.toLowerCase();
+      
       // Особые значения для конкретных KOL
-      if (kolId.value.toLowerCase() === 'idoresearch') {
-        return 162; // Низкое значение (в красной/оранжевой зоне)
-      } else if (kolId.value.toLowerCase() === 'defigencapital') {
-        return 0; // Высокое значение (в зеленой зоне)
-      } else if (kolId.value.toLowerCase() === 'tradeparty1337') {
-        return 162; // Высокое значение (в зеленой зоне)
+      if (kolIdLower === 'idoresearch') {
+        return 162; // Высокое значение (в красной/оранжевой зоне)
+      } else if (kolIdLower === 'defigencapital') {
+        return 0; // Низкое значение (в зеленой зоне)
+      } else if (kolIdLower === 'tradeparty1337') {
+        return 162; // Высокое значение (в красной/оранжевой зоне)
+      } else if (kolIdLower === 'crypto_hacklng' || kolIdLower === 'crypto_hacking') {
+        return 135; // Высокое значение (в оранжевой зоне)
+      } else if (kolIdLower === 'crypton_off') {
+        return 80; // Среднее значение (в желтой зоне)
       }
       
       // Для других KOL используем расчет по умолчанию
@@ -255,9 +293,34 @@ export default {
     });
     
     const checkAvatar = () => {
-      hasAvatar.value = availableAvatars.includes(kolId.value);
-      if (hasAvatar.value) {
-        avatarPath.value = `/avatars/${kolId.value}.jpg`;
+      try {
+        console.log(`Checking avatar for: ${kolId.value}`);
+        
+        // Нормализуем ID для проверки наличия аватара
+        const normalizedId = kolId.value.toLowerCase();
+        
+        // Специальная обработка для crypto_hacking/crypto_hacklng
+        if (normalizedId === 'crypto_hacking' || normalizedId === 'crypto_hacklng') {
+          hasAvatar.value = true;
+          avatarPath.value = `/avatars/CRYPTO_HACKlNG.jpg`;
+          console.log(`Special avatar path set for CRYPTO_HACKING: ${avatarPath.value}`);
+          return;
+        }
+        
+        // Проверяем по нормализованным значениям
+        hasAvatar.value = availableAvatars.some(avatar => 
+          avatar.toLowerCase() === normalizedId
+        );
+        
+        if (hasAvatar.value) {
+          avatarPath.value = `/avatars/${kolId.value}.jpg`;
+          console.log(`Avatar path set to: ${avatarPath.value}`);
+        } else {
+          console.log(`No avatar found for: ${kolId.value}`);
+        }
+      } catch (error) {
+        console.error('Error while checking avatar:', error);
+        hasAvatar.value = false; // По умолчанию не показываем аватар в случае ошибки
       }
     };
     
@@ -343,284 +406,68 @@ export default {
       return urls;
     };
     
-    const loadSubscribersHistory = () => {
-      let historyData = '';
+    const loadSubscribersHistory = async () => {
+      console.log(`----- LOADING SUBSCRIBER HISTORY -----`);
+      console.log(`Loading subscriber history for KOL: ${kolId.value} (API KOL ID: ${apiKolId.value})`);
       
-      // Проверяем, какой KOL и загружаем соответствующие данные
-      if (kolId.value.toLowerCase() === 'idoresearch') {
-        // Данные для IDO Research (без апреля 2025, его возьмем из API)
-        historyData = `April 2021, 377, 500
-January 2022, 23578, 7000
-February 2022, 25315, 8600
-Mart 2022, 26188, 9400
-April 2022, 27017, 12900
-May 2022, 42500, 15600
-June 2022, 43750, 12800
-July 2022, 44351, 11000
-August 2022, 43775, 10000
-September 2022, 43129, 9500
-October 2022, 44193, 9000
-November 2022, 52706, 11500
-December 2022, 52559, 13100
-January 2023, 55793, 11300
-February 2023, 54176, 11500
-March 2023, 54954, 10500
-April 2023, 56340, 12000
-May 2023, 56221, 13400
-June 2023, 56250, 12000
-July 2023, 56049, 11000
-August 2023, 56069, 13000
-September 2023, 55629, 13500
-October 2023, 54980, 14300
-November 2023, 54525, 13700
-December 2023, 54785, 15800
-January 2024, 60405, 18500
-February 2024, 60939, 14500
-March 2024, 65518, 15000
-April 2024, 66140, 15000
-May 2024, 66590, 14000
-June 2024, 66772, 14200
-July 2024, 67735, 15500
-August 2024, 67000, 14000
-September 2024, 66683, 13500
-October 2024, 66253, 12500
-November 2024, 65455, 12600
-December 2024, 65965, 13000
-January 2025, 73000, 14600
-February 2025, 74301, 14018
-March 2025, 73578, 12000`;
-      } else if (kolId.value.toLowerCase() === 'defigencapital') {
-        // Данные для DefiGen Capital с охватами
-        historyData = `November 2022, 437, 300
-December 2022, 7500, 5900
-January 2023, 7681, 5300
-February 2023, 8025, 6900
-March 2023, 9140, 7300
-April 2023, 12495, 8500
-May 2023, 13369, 11500
-June 2023, 14265, 11800
-July 2023, 15029, 10000
-August 2023, 16557, 18400
-September 2023, 17742, 13300
-October 2023, 17668, 12000
-November 2023, 17717, 15182
-December 2023, 17749, 15000
-January 2024, 18001, 13600
-February 2024, 18105, 12300
-March 2024, 20422, 13100
-April 2024, 22190, 13500
-May 2024, 23665, 13700
-June 2024, 24362, 15000
-July 2024, 25521, 15600
-August 2024, 25297, 14000
-September 2024, 25370, 12000
-October 2024, 25611, 11000
-November 2024, 25480, 13000
-December 2024, 26569, 12000
-January 2025, 26790, 12300
-February 2025, 27190, 12000
-March 2025, 27317, 12000`;
-      } else if (kolId.value.toLowerCase() === 'tradeparty1337') {
-        // Данные для TradeParty1337
-        historyData = `April 2021, 60000, 16500
-May 2021, 61500, 20000
-June 2021, 65500, 18500
-July 2021, 64500, 18100
-August 2021, 64000, 16000
-September 2021, 67000, 17500
-October 2021, 67500, 18700
-November 2021, 70000, 21000
-December 2021, 80000, 23000
-January 2022, 78000, 26000
-February 2022, 75000, 21000
-Mart 2022, 85000, 23000
-April 2022, 76500, 24000
-May 2022, 75500, 23000
-June 2022, 74000, 19500
-July 2022, 75500, 21000
-August 2022, 74000, 23000
-September 2022, 74000, 31000
-October 2022, 70000, 14000
-November 2022, 71000, 20000
-December 2022, 70500, 21000
-January 2023, 73000, 29000
-February 2023, 74000, 18000
-March 2023, 73000, 22000
-April 2023, 71000, 26000
-May 2023, 70000, 20000
-June 2023, 67000, 20000
-July 2023, 65000, 18000
-August 2023, 64000, 15000
-September 2023, 64000, 15000
-October 2023, 63000, 18000
-November 2023, 62000, 17500
-December 2023, 82000, 16500
-January 2024, 74000, 15500
-February 2024, 158000, 43000
-March 2024, 125000, 21500
-April 2024, 112500, 18000
-May 2024, 105000, 17500
-June 2024, 100000, 18000
-July 2024, 98000, 18000
-August 2024, 95000, 15000
-September 2024, 92000, 15000
-October 2024, 88000, 15000
-November 2024, 87000, 13000
-December 2024, 95000, 13500
-January 2025, 91000, 11500
-February 2025, 87000, 12500
-March 2025, 83000, 11000`;
-      } else if (kolId.value.toLowerCase() === 'xardmoney') {
-        // Данные для XardMoney
-        historyData = `February 2022, 50, 0
-March 2022, 200, 500
-April 2022, 700, 800
-May 2022, 1300, 1000
-June 2022, 1350, 1100
-July 2022, 1400, 900
-August 2022, 1350, 950
-September 2022, 1320, 1000
-October 2022, 1300, 1000
-November 2022, 1280, 950
-December 2022, 1250, 900
-January 2023, 1400, 1100
-February 2023, 1500, 1200
-March 2023, 1800, 1400
-April 2023, 2000, 2000
-May 2023, 2200, 2200
-June 2023, 2400, 2400
-July 2023, 2800, 3200
-August 2023, 3000, 2800
-September 2023, 3050, 2600
-October 2023, 3100, 2500
-November 2023, 3150, 2400
-December 2023, 3200, 2300
-January 2024, 3000, 2500
-February 2024, 3050, 2700
-March 2024, 3200, 2800
-April 2024, 3400, 2900
-May 2024, 3500, 1800
-June 2024, 3600, 2000
-July 2024, 3700, 2100
-August 2024, 3750, 1500
-September 2024, 3700, 1700
-October 2024, 3650, 2000
-November 2024, 3600, 2300
-December 2024, 3550, 2700
-January 2025, 4900, 3900
-February 2025, 6200, 3100
-March 2025, 6500, 2500
-April 2025, 6450, 2000`;
-      } else if (kolId.value.toLowerCase() === 'crypton_off') {
-        // Данные для Crypton_off
-        historyData = `July 2021, 25000, 6000
-August 2021, 27000, 5500
-September 2021, 28000, 5000
-October 2021, 29000, 4800
-November 2021, 29500, 4600
-December 2021, 30000, 4400
-January 2022, 30500, 5200
-February 2022, 31000, 6000
-March 2022, 31500, 6500
-April 2022, 31000, 9000
-May 2022, 30000, 10000
-June 2022, 29000, 11000
-July 2022, 28500, 10000
-August 2022, 28000,  8500
-September 2022, 27500,  8000
-October 2022, 27000,  7500
-November 2022, 26000,  6800
-December 2022, 25500,  6200
-January 2023, 35000,  6100
-February 2023, 36000,  6000
-March 2023, 36500,  5800
-April 2023, 36000,  5700
-May 2023, 35500,  5600
-June 2023, 34500,  5500
-July 2023, 34000,  5800
-August 2023, 34500,  6100
-September 2023, 35000,  6200
-October 2023, 35500,  6300
-November 2023, 36000,  6400
-December 2023, 36500,  6500
-January 2024, 53000,  5800
-February 2024, 54000,  5700
-March 2024, 55000,  5600
-April 2024, 56000,  6000
-May 2024, 58000,  7000
-June 2024, 60000,  8500
-July 2024, 61000,  9000
-August 2024, 62000,  9500
-September 2024, 61000,  9800
-October 2024, 60000, 10000
-November 2024, 59000,  9200
-December 2024, 58000,  9000
-January 2025, 100000,  9000
-February 2025, 110000,  9500
-March 2025, 115000,  8500
-April 2025, 110000,  7500`;
-      }
-      
-      // Если есть данные для текущего KOL, парсим их
-      if (historyData) {
-        const lines = historyData.trim().split('\n');
-        const parsedData = [];
-        const parsedViewsData = [];
+      // Пытаемся загрузить историю для конкретного KOL
+      try {
+        console.log(`Requesting data from: /api/kol/${apiKolId.value}`);
+        const response = await fetch(`/api/kol/${apiKolId.value}`);
+        console.log(`API Response status: ${response.status} for kol/${apiKolId.value}`);
         
-        lines.forEach(line => {
-          const parts = line.split(', ');
-          const dateStr = parts[0];
-          const subscribersValue = parseInt(parts[1].trim(), 10);
-          
-          parsedData.push({
-            date: dateStr,
-            value: subscribersValue
-          });
-          
-          // Если есть данные по охватам 
-          if (parts.length > 2 && parts[2]) {
-            parsedViewsData.push({
-              date: dateStr,
-              value: parseInt(parts[2].trim(), 10)
-            });
-          }
-        });
-        
-        // Добавляем апрель 2025 из актуальных данных API для подписчиков
-        if (kolData.value && kolData.value.subscribers) {
-          parsedData.push({
-            date: 'April 2025',
-            value: kolData.value.subscribers
-          });
-          
-          // Добавляем данные для разных KOL
-          if (kolId.value.toLowerCase() === 'defigencapital') {
-            parsedViewsData.push({
-              date: 'April 2025',
-              value: 10500 
-            });
-          }
-          else if (kolId.value.toLowerCase() === 'idoresearch') {
-            parsedViewsData.push({
-              date: 'April 2025',
-              value: 13700 
-            });
-          }
-          else if (kolId.value.toLowerCase() === 'tradeparty1337') {
-            parsedViewsData.push({
-              date: 'April 2025',
-              value: 7700 // Добавляем значение просмотров для tradeparty1337
-            });
-          }
+        if (!response.ok) {
+          console.error(`Error loading history data: ${response.statusText}`);
+          subscribersHistory.value = [];
+          viewsHistory.value = [];
+          return;
         }
         
-        subscribersHistory.value = parsedData;
-        viewsHistory.value = parsedViewsData;
-      } else {
-        // Если данных нет, очищаем историю
+        const data = await response.json();
+        console.log('Received history data (length):', data?.length);
+        console.log('First few items:', data?.slice(0, 2));
+        
+        // Если данные есть
+        if (data && data.length > 0) {
+          // Данные уже в правильном формате {date, value, views}
+          subscribersHistory.value = data.map(item => ({
+            date: item.date,
+            value: item.value
+          }));
+          
+          // Обрабатываем просмотры из того же API ответа
+          viewsHistory.value = data
+            .filter(item => item.views !== null && item.views !== undefined)
+            .map(item => ({
+              date: item.date,
+              value: item.views
+            }));
+          
+          console.log(`Processed ${subscribersHistory.value.length} subscriber data points`);
+          console.log(`Processed ${viewsHistory.value.length} views data points`);
+          
+          // Проверяем первый и последний элементы для отладки
+          if (subscribersHistory.value.length > 0) {
+            console.log('First subscriber entry:', subscribersHistory.value[0]);
+            console.log('Last subscriber entry:', subscribersHistory.value[subscribersHistory.value.length - 1]);
+          }
+          
+          if (viewsHistory.value.length > 0) {
+            console.log('First views entry:', viewsHistory.value[0]);
+            console.log('Last views entry:', viewsHistory.value[viewsHistory.value.length - 1]);
+          }
+        } else {
+          console.warn('API returned no data');
+          subscribersHistory.value = [];
+          viewsHistory.value = [];
+        }
+        
+      } catch (error) {
+        console.error('Error in loadSubscribersHistory:', error);
         subscribersHistory.value = [];
         viewsHistory.value = [];
       }
+      console.log(`----- END SUBSCRIBER HISTORY LOADING -----`);
     };
     
     const loadKOLData = async () => {
@@ -637,21 +484,43 @@ April 2025, 110000,  7500`;
         let found = false;
         
         for (const item of data) {
-          const parts = item.split(', ');
-          const username = parts[0]; // username (ник) канала
-          const name = parts[1]; // полное имя канала
+          // Для отладки выводим строку, которую обрабатываем
+          console.log(`Processing item: ${item}`);
+          
+          // Новый алгоритм разбора строки
+          // Предполагаем, что последняя часть - это число подписчиков
+          // Первые две части - username и name
+          const lastCommaIndex = item.lastIndexOf(',');
+          if (lastCommaIndex === -1) continue; // Пропускаем некорректные строки
+          
+          // Извлекаем количество подписчиков (последняя часть)
+          const subscribersStr = item.substring(lastCommaIndex + 1).trim();
+          const subscribers = parseInt(subscribersStr, 10) || 0;
+          
+          // Используем регулярное выражение для извлечения первых двух частей
+          const firstPartsMatch = item.substring(0, lastCommaIndex).match(/^([^,]+),\s*([^,]+)/);
+          if (!firstPartsMatch) continue;
+          
+          const username = firstPartsMatch[1].trim();
+          const name = firstPartsMatch[2].trim();
+          
+          // Извлекаем описание (все, что между name и subscribers)
+          const nameEndIndex = item.indexOf(name) + name.length;
+          const description = item.substring(nameEndIndex + 1, lastCommaIndex).trim();
           
           // Нормализуем имя для сравнения
           const normalizedUsername = username.toLowerCase().replace(/\s+/g, '');
           
-          if (normalizedUsername === kolId.value.toLowerCase()) {
+          // Расширяем условие совпадения для особых случаев
+          const matchCrypto = (normalizedUsername === 'crypto_hacklng' && apiKolId.value === 'crypto_hacklng') || 
+                             (normalizedUsername === 'crypto_hacking' && apiKolId.value === 'crypto_hacklng');
+                              
+          if (normalizedUsername === apiKolId.value || matchCrypto || 
+              normalizedUsername.includes(apiKolId.value) || apiKolId.value.includes(normalizedUsername)) {
             found = true;
-            
-            // Извлекаем описание (все части кроме первой, второй и последней)
-            const description = parts.slice(2, parts.length - 1).join(', ');
-            
-            // Извлекаем количество подписчиков (последняя часть)
-            const subscribers = parseInt(parts[parts.length - 1], 10) || 0;
+            console.log(`KOL found: ${username} (matched with ${kolId.value}, apiKolId: ${apiKolId.value})`);
+            console.log(`Parsed data: username=${username}, name=${name}, subscribers=${subscribers}`);
+            console.log(`Description: ${description}`);
             
             // Извлекаем URL Telegram канала/чата из описания, если есть
             const telegramUrls = extractTelegramUrls(description);
@@ -706,91 +575,101 @@ April 2025, 110000,  7500`;
       }
     };
     
-    // Функция для загрузки последнего поста (упрощенная версия после обновления API)
-const loadLastPost = async () => {
-  lastPostLoading.value = true;
-  lastPostError.value = '';
-  
-  try {
-    const response = await fetch('/api/kolastpost');
-    if (!response.ok) {
-      throw new Error('Ошибка при получении данных о постах');
-    }
-    
-    const allPosts = await response.json();
-    
-    // Получаем текущий ID канала в нижнем регистре
-    const kolIdLower = kolId.value.toLowerCase();
-    
-    // Ищем точное совпадение по имени
-    let currentKolPost = allPosts.find(post => 
-      post.kolName.toLowerCase() === kolIdLower
-    );
-    
-    // Если точное совпадение не найдено, ищем частичное совпадение
-    if (!currentKolPost) {
-      currentKolPost = allPosts.find(post => 
-        post.kolName.toLowerCase().includes(kolIdLower) || 
-        kolIdLower.includes(post.kolName.toLowerCase())
-      );
-    }
-    
-    if (currentKolPost) {
-      // Форматируем дату, если она некорректна
-      if (!currentKolPost.date || !currentKolPost.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        currentKolPost.date = new Date().toISOString().split('T')[0];
-      }
+    // Функция для загрузки последнего поста
+    const loadLastPost = async () => {
+      lastPostLoading.value = true;
+      lastPostError.value = '';
       
-      lastPost.value = currentKolPost;
-    } else {
-      lastPostError.value = 'Посты не найдены';
-    }
-  } catch (err) {
-    console.error('Ошибка при загрузке последнего поста:', err);
-    lastPostError.value = 'Не удалось загрузить последний пост';
-  } finally {
-    lastPostLoading.value = false;
-  }
-};
+      try {
+        const response = await fetch('/api/kolastpost');
+        if (!response.ok) {
+          throw new Error('Ошибка при получении данных о постах');
+        }
+        
+        const allPosts = await response.json();
+        
+        // Получаем текущий ID канала в нижнем регистре
+        const kolIdLower = apiKolId.value;
+        
+        // Ищем точное совпадение по имени
+        let currentKolPost = allPosts.find(post => 
+          post.kolName.toLowerCase() === kolIdLower
+        );
+        
+        // Если точное совпадение не найдено, ищем частичное совпадение
+        if (!currentKolPost) {
+          currentKolPost = allPosts.find(post => 
+            post.kolName.toLowerCase().includes(kolIdLower) || 
+            kolIdLower.includes(post.kolName.toLowerCase())
+          );
+        }
+        
+        if (currentKolPost) {
+          // Форматируем дату, если она некорректна
+          if (!currentKolPost.date || !currentKolPost.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            currentKolPost.date = new Date().toISOString().split('T')[0];
+          }
+          
+          lastPost.value = currentKolPost;
+        } else {
+          lastPostError.value = 'Посты не найдены';
+        }
+      } catch (err) {
+        console.error('Ошибка при загрузке последнего поста:', err);
+        lastPostError.value = 'Не удалось загрузить последний пост';
+      } finally {
+        lastPostLoading.value = false;
+      }
+    };
 
-const goBack = () => {
-  router.push('/kols');
-};
+    const goBack = () => {
+      router.push('/kols');
+    };
 
-// Изменение порядка загрузки данных
-onMounted(() => {
-  checkAvatar();
-  // Сначала загружаем данные о KOL, чтобы получить актуальное количество подписчиков
-  loadKOLData()
-    .then(() => {
-      // После получения данных о KOL загружаем остальное
-      loadLastPost();
+    // Изменение порядка загрузки данных
+    onMounted(async () => {
+      try {
+        console.log(`Component mounted, kolId: ${kolId.value}, apiKolId: ${apiKolId.value}`);
+        
+        // Проверяем наличие аватара
+        checkAvatar();
+        
+        // Сначала загружаем данные о KOL, чтобы получить актуальное количество подписчиков
+        await loadKOLData();
+        
+        // После получения данных о KOL загружаем остальное
+        await loadLastPost();
+      } catch (error) {
+        console.error('Error during component initialization:', error);
+        // Устанавливаем состояние ошибки
+        loading.value = false;
+        error.value = 'Произошла ошибка при загрузке данных. Попробуйте обновить страницу.';
+      }
     });
-});
 
-return {
-  meterValue,
-  kolId,
-  kolData,
-  loading,
-  error,
-  hasAvatar,
-  avatarPath,
-  avatarLetter,
-  subscribersHistory,
-  viewsHistory,
-  lastPost,
-  lastPostLoading,
-  lastPostError,
-  formatNumber,
-  formatPostDate,
-  growthValue,
-  growthClass,
-  viewsGrowthValue,
-  viewsGrowthClass,
-  socialLinks,
-  goBack
-};
+    return {
+      meterValue,
+      kolId,
+      kolData,
+      loading,
+      error,
+      hasAvatar,
+      avatarPath,
+      avatarLetter,
+      subscribersHistory,
+      viewsHistory,
+      lastPost,
+      lastPostLoading,
+      lastPostError,
+      formatNumber,
+      formatPostDate,
+      growthValue,
+      growthClass,
+      viewsGrowthValue,
+      viewsGrowthClass,
+      socialLinks,
+      goBack
+    };
   }
 }
 </script>

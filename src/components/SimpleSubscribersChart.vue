@@ -20,6 +20,25 @@ export default {
     }
   },
   setup(props) {
+    console.log('------------------------');
+    console.log('SimpleSubscribersChart received data:', props.data);
+    if (props.data && props.data.length > 0) {
+      console.log('First data point:', props.data[0]);
+      console.log('Last data point:', props.data[props.data.length - 1]);
+      
+      // Check the years in the data
+      const years = new Set();
+      props.data.forEach(item => {
+        if (item.date) {
+          const dateParts = item.date.split(' ');
+          const year = dateParts[dateParts.length - 1];
+          years.add(year);
+        }
+      });
+      console.log('Years in the data:', Array.from(years).sort());
+    }
+    console.log('------------------------');
+    
     const chartCanvas = ref(null);
     const activePoint = ref(null);
     const mousePosition = ref({ x: 0, y: 0 });
